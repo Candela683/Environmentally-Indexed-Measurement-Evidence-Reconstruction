@@ -148,6 +148,13 @@ def add_ocean_position_flags(
     )
     df["reported_coordinate_in_ocean"] = reported[0]
     df["reported_coordinate_ocean_status"] = reported[1]
+    df["reported_coordinate_ocean_checked"] = df["reported_coordinate_ocean_status"].isin(
+        ["in_ocean", "on_land_or_outside_ocean_polygon"]
+    )
+    df["coordinate_needs_manual_geographic_review"] = (
+        df["coordinate_status"].ne("usable_reported_coordinate")
+        | df["reported_coordinate_ocean_status"].eq("on_land_or_outside_ocean_polygon")
+    )
 
     has_reported_coordinate = df["latitude"].notna() & df["longitude"].notna()
     df["relocation_needed"] = ~has_reported_coordinate

@@ -39,10 +39,12 @@ config/dashscope_models.yaml
 Current defaults:
 
 - extraction model: `qwen3.6-plus`
-- screenshot OCR model: `qwen-vl-ocr-2025-11-20`
+- image/article OCR model: `qwen-vl-ocr-2025-11-20`
 - question-answering model: `qwen3.6-plus`
 - API base URL: `https://dashscope.aliyuncs.com/compatible-mode/v1`
 - API key source: environment variable `DASHSCOPE_API_KEY`
+
+The OCR model is used for article images, image-only articles, scanned pages, figure/table screenshots, and abnormal article files that cannot be handled cleanly by normal text extraction.
 
 Check configuration without printing the key:
 
@@ -90,6 +92,21 @@ python scripts\import_external_assets.py --full-cmems
 
 These copied assets remain local and are ignored by Git.
 
+## Local Resources To Prepare
+
+Some resources are local inputs rather than files maintained in Git. Prepare or download them before running a full reconstruction:
+
+- selected `[yes]` PDF folders: source articles that have been screened and confirmed for extraction.
+- GBIF resources: local taxonomy/name indexes used for species-name matching.
+- WoRMS resources: local WoRMS taxonomy export used for accepted names and marine taxonomy fields.
+- CMEMS resources: local NetCDF products or flattened monthly environmental tables used for environmental matching.
+- extraction outputs: prompt-versioned JSON/CSV files generated from the PDF extraction runs.
+- validation tables: manual labels or review tables used to evaluate extraction quality.
+
+The demo can generate a local SQLite database from the synthetic PDF. For real projects, database files can be kept under `synthetic_bundle/data_raw/databases/sqlite/`, but they are not committed to Git.
+
+The Natural Earth ocean shapefile used for ocean-position checks is included in this repository under `synthetic_bundle/data_raw/geocoding/shp/`. Replace it locally only if a newer or project-specific ocean mask is needed.
+
 ## Review Tables
 
 Per-PDF extraction files stay inside each PDF unit. Cross-PDF review tables are written outside the PDF folders:
@@ -134,7 +151,7 @@ Environmental matching attaches nearest-grid values and match distance while pre
 
 ## Coordinate And Ocean Checks
 
-Reported longitude/latitude values are treated as the source coordinates. If a record already has longitude and latitude, the workflow does not relocate that point.
+Reported longitude/latitude values are treated as the source coordinates. If a record already has longitude and latitude, the workflow checks whether that point falls inside the ocean polygon, but it does not relocate or overwrite the point.
 
 The ocean polygon is stored under:
 
@@ -142,7 +159,7 @@ The ocean polygon is stored under:
 synthetic_bundle/data_raw/geocoding/shp/ne_10m_ocean/ne_10m_ocean.shp
 ```
 
-During coordinate QC, the workflow adds ocean-position flags to `05_coordinate_qc_no_point_modification.csv`, including whether the reported coordinate falls inside the ocean polygon. If future extraction or geocoding tables include candidate relocated coordinate columns, those candidate points are checked too, but reported longitude/latitude still take priority.
+During coordinate QC, the workflow adds ocean-position flags to `05_coordinate_qc_no_point_modification.csv`, including `reported_coordinate_ocean_checked`, `reported_coordinate_in_ocean`, `reported_coordinate_ocean_status`, and `coordinate_needs_manual_geographic_review`. If future extraction or geocoding tables include candidate relocated coordinate columns, those candidate points are checked too, but reported longitude/latitude still take priority.
 
 ## Synthetic PDF Generator
 
