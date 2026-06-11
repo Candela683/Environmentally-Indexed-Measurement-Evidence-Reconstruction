@@ -1,0 +1,21 @@
+llm_extraction:
+  # OpenAI-compatible endpoint. Keep the key in an environment variable or a local file.
+  base_url: https://api.openai.com/v1
+  api_key_env: OPENAI_API_KEY
+  api_key_file: config/secrets/openai_api_key.txt
+  model: gpt-4.1-mini
+local_ollama:
+  base_url: http://localhost:11434/v1
+  api_key_env: OLLAMA_API_KEY
+  api_key_file: config/secrets/ollama_api_key.txt
+  model: qwen3
+geocoding:
+  # Example only. Users must follow the provider's terms and keep keys local.
+  base_url: https://maps.googleapis.com/maps/api/geocode/json
+  api_key_env: GOOGLE_MAPS_API_KEY
+  api_key_file: config/secrets/google_maps_api_key.txt
+taxonomy:
+  gbif_species_match_url: https://api.gbif.org/v1/species/match
+  worms_aphia_records_url: https://www.marinespecies.org/rest/AphiaRecordsByName
+cmems:
+  product_catalog_url: https://data.marine.copernicus.eu/products

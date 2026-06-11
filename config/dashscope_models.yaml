@@ -1,0 +1,23 @@
+dashscope:
+  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  api_key_env: DASHSCOPE_API_KEY
+  api_key_file: config/secrets/dashscope_api_key.txt
+
+  extraction:
+    model: qwen3.6-plus
+    temperature: 0
+    enable_thinking: false
+
+  ocr:
+    model: qwen-vl-ocr-2025-11-20
+    image_prompt: Extract only the visible text from this image.
+
+  qa:
+    model: qwen3.6-plus
+    enable_thinking: false
+    stream: true
+    prompt_template: |
+      Answer the question directly and include a concise explanation.
+
+      Question:
+      {text}

@@ -1,0 +1,21 @@
+synthetic_pdf:
+  article_folder: synthetic_bundle/data_raw/literature/pdfs/[yes]+synthetic_marine_arsenic_article
+  pdf_unit_folder: synthetic_bundle/data_raw/literature/pdfs/[yes]+synthetic_marine_arsenic_article/pdf
+  relative_path: synthetic_bundle/data_raw/literature/pdfs/[yes]+synthetic_marine_arsenic_article/pdf/synthetic_arsenic_article.pdf
+  doi_path: synthetic_bundle/data_raw/literature/pdfs/[yes]+synthetic_marine_arsenic_article/pdf/doi.txt
+database:
+  sqlite_relative_path: synthetic_bundle/data_raw/databases/sqlite/synthetic_arsenic_reconstruction.sqlite
+environment:
+  mode: sqlite_monthly_table
+  note: The demo stores only the specific synthetic months needed by the PDF records.
+netcdf_subset:
+  relative_folder: synthetic_bundle/data_raw/cmems/netcdf_subset
+  note: Optional. If NetCDF is used later, place only the specific year-month slices needed by the synthetic records.
+outputs:
+  relative_folder: synthetic_bundle/outputs
+review_tables:
+  extracted_data: synthetic_bundle/review_tables/extracted_data
+  geographic_mapping: synthetic_bundle/review_tables/geographic_mapping
+  species_matching: synthetic_bundle/review_tables/species_matching
+  environment_variable_matching: synthetic_bundle/review_tables/environment_variable_matching
+  complete_outputs: synthetic_bundle/review_tables/complete_outputs
