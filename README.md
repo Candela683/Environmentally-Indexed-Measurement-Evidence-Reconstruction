@@ -1,6 +1,14 @@
 # Environmentally Indexed Measurement Evidence Reconstruction
 
-This repository contains the runnable reconstruction workflow for marine arsenic measurement evidence.
+This repository contains the companion code for the manuscript:
+
+```text
+An evidence-to-model framework for reconstructing literature-derived contaminant measurements using a schema-guided large language model: a marine arsenic case study
+```
+
+Submitted to Environmental Modelling and Software as manuscript `ENVSOFT-D-26-01822`.
+
+The code provides the runnable reconstruction workflow for marine arsenic measurement evidence.
 
 The workflow is organized around PDF units. Each selected article is stored as a folder named with the `[yes]+...` prefix. In this project, `[yes]` means the PDF has been selected and confirmed for the reconstruction workflow.
 
