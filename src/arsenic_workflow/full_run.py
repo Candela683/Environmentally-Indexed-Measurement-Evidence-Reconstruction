@@ -185,7 +185,7 @@ def run_full_local(project_root: str | Path, output_dir: str | Path) -> dict[str
     completeness = summarize_field_completeness(candidate_qc)
     harmonized = harmonize_records(candidate_qc)
     kept = harmonized[harmonized["record_keep"]].copy()
-    coordinate_checked = flag_coordinate_quality(kept)
+    coordinate_checked = flag_coordinate_quality(kept, project_root=project_root)
     coordinate_usable = coordinate_checked[coordinate_checked["coordinate_usable_for_environment"]].copy()
     with_taxonomy = attach_taxonomy(coordinate_usable, taxonomy)
     modelling = attach_nearest_environment(with_taxonomy, environment)

@@ -136,12 +136,23 @@ def copy_cmems(cmems_root: Path, root: Path, manifest: list[dict[str, str]], ful
     )
 
 
+def copy_geocoding_shp(shp_root: Path, root: Path, manifest: list[dict[str, str]]) -> None:
+    target_dir = root / "synthetic_bundle" / "data_raw" / "geocoding" / "shp"
+    if not shp_root.exists():
+        raise FileNotFoundError(f"Missing shapefile folder: {shp_root}")
+    for source in sorted(shp_root.rglob("*")):
+        if source.is_file():
+            rel = source.relative_to(shp_root)
+            _copy_file(source, target_dir / rel, manifest)
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdf-data", default=r"D:\wuqiang\qiang\arsenic\pdf_data")
     parser.add_argument("--gbif", default=r"D:\wuqiang\qiang\arsenic\dependence_data\GBIF")
     parser.add_argument("--worms", default=r"D:\wuqiang\qiang\arsenic\WoRMS_download_2026-05-01")
     parser.add_argument("--cmems", default=r"D:\wuqiang\qiang\arsenic\database\CMEMS")
+    parser.add_argument("--shp", default=r"D:\wuqiang\qiang\arsenic\database\shp")
     parser.add_argument("--full-gbif", action="store_true")
     parser.add_argument("--full-worms", action="store_true", default=True)
     parser.add_argument("--no-full-worms", action="store_false", dest="full_worms")
@@ -156,6 +167,7 @@ def main(argv: list[str]) -> int:
     copy_gbif(Path(args.gbif), ROOT, manifest, full=args.full_gbif)
     copy_worms(Path(args.worms), ROOT, manifest, full=args.full_worms)
     copy_cmems(Path(args.cmems), ROOT, manifest, full=args.full_cmems)
+    copy_geocoding_shp(Path(args.shp), ROOT, manifest)
     _write_manifest(ROOT / "synthetic_bundle" / "external_asset_manifest.csv", manifest)
     print(f"Copied PDF files: {len(copied_pdfs)}")
     print(f"Manifest: {ROOT / 'synthetic_bundle' / 'external_asset_manifest.csv'}")

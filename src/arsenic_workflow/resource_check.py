@@ -24,6 +24,7 @@ REQUIRED_EXTERNAL_RESOURCES = [
     RequiredResource("data_raw/taxonomy/gbif_backbone", "GBIF backbone taxonomy export"),
     RequiredResource("data_raw/taxonomy/worms", "WoRMS match or taxonomy export"),
     RequiredResource("data_raw/taxonomy/manual_overrides", "manual taxonomy corrections"),
+    RequiredResource("data_raw/geocoding/shp", "ocean polygon shapefile for point-in-ocean checks"),
     RequiredResource("data_raw/geocoding/cache", "local geocoding cache"),
     RequiredResource("data_raw/geocoding/manual_review", "manual locality review tables"),
     RequiredResource("data_raw/cmems/biogeochemistry", "CMEMS biogeochemistry monthly products"),

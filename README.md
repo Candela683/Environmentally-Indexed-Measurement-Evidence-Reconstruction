@@ -79,7 +79,7 @@ Copy selected local PDFs and reference resources into the repository working fol
 python scripts\import_external_assets.py
 ```
 
-The import script copies selected `[yes]` PDFs, WoRMS files, GBIF name indexes, and a small CMEMS subset into `synthetic_bundle/data_raw/`.
+The import script copies selected `[yes]` PDFs, WoRMS files, GBIF name indexes, the ocean shapefile, and a small CMEMS subset into `synthetic_bundle/data_raw/`.
 
 Optional larger imports:
 
@@ -132,6 +132,18 @@ The full workflow writes:
 
 Environmental matching attaches nearest-grid values and match distance while preserving the sample coordinates.
 
+## Coordinate And Ocean Checks
+
+Reported longitude/latitude values are treated as the source coordinates. If a record already has longitude and latitude, the workflow does not relocate that point.
+
+The ocean polygon is stored under:
+
+```text
+synthetic_bundle/data_raw/geocoding/shp/ne_10m_ocean/ne_10m_ocean.shp
+```
+
+During coordinate QC, the workflow adds ocean-position flags to `05_coordinate_qc_no_point_modification.csv`, including whether the reported coordinate falls inside the ocean polygon. If future extraction or geocoding tables include candidate relocated coordinate columns, those candidate points are checked too, but reported longitude/latitude still take priority.
+
 ## Synthetic PDF Generator
 
 The synthetic PDF generator is kept in:
@@ -164,6 +176,9 @@ arsenic_reconstruction_release/
     data_raw/
       cmems/
       databases/
+      geocoding/
+        shp/
+          ne_10m_ocean/
       literature/
         pdfs/
           [yes]+synthetic_marine_arsenic_article/
