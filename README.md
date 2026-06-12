@@ -16,6 +16,20 @@ Large local resources such as PDFs, SQLite databases, NetCDF slices, taxonomy fi
 
 ## Main Entry Points
 
+Start from the RIS example:
+
+```text
+synthetic_bundle/data_raw/literature/ris/example.ris
+```
+
+Parse the RIS file, extract the DOI, create the `[yes]+example` PDF unit, and download the source PDF:
+
+```powershell
+python scripts\run_ris_to_pdf_download.py
+```
+
+The script uses `illustrative_download_function` in `src/arsenic_workflow/ris_ingest.py` as the illustrative download function. It currently points to the SSRN delivery URL for DOI `10.2139/ssrn.4476876`.
+
 Notebook demo:
 
 ```text
@@ -205,7 +219,14 @@ arsenic_reconstruction_release/
         shp/
           ne_10m_ocean/
       literature/
+        ris/
+          example.ris
         pdfs/
+          [yes]+example/
+            pdf/
+              source_metadata/
+              extracted_text/
+              extracted_tables/
           [yes]+synthetic_marine_arsenic_article/
             pdf/
               source_metadata/
