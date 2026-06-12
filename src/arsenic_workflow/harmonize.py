@@ -89,6 +89,7 @@ def normalize_unit(unit: Any) -> str | float:
         return np.nan
     text = str(unit).strip().lower()
     text = text.replace("micro", "u")
+    text = text.replace("\u00b5", "u").replace("\u03bc", "u")
     text = text.replace(" dry weight", "").replace(" wet weight", "")
     text = text.replace("dw", "").replace("ww", "").strip()
     text = re.sub(r"\s+", " ", text)

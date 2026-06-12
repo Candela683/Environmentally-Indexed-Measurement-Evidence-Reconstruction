@@ -1,0 +1,5 @@
+version: v1
+date: "2026-06-12"
+enable_thinking: true
+runs: 2
+prompt_file: prompt_v1.txt

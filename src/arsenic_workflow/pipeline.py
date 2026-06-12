@@ -1,4 +1,4 @@
-"""End-to-end demonstration pipeline."""
+"""End-to-end reconstruction pipeline."""
 
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ from .taxonomy import attach_taxonomy
 from .validation import error_class_summary, validation_metrics
 
 
-def run_demo(data_dir: str | Path, output_dir: str | Path) -> dict[str, Path]:
-    """Run the public sample workflow and return output paths."""
+def run_pipeline(data_dir: str | Path, output_dir: str | Path) -> dict[str, Path]:
+    """Run the reconstruction workflow and return output paths."""
 
     data_dir = Path(data_dir)
     output_dir = Path(output_dir)

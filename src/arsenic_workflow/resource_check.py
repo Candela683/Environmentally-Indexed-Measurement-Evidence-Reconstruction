@@ -12,26 +12,25 @@ class RequiredResource:
 
     relative_path: str
     description: str
-    required_for_demo: bool = False
 
 
 REQUIRED_EXTERNAL_RESOURCES = [
-    RequiredResource("data_raw/literature/ris", "RIS or CSV bibliographic exports"),
-    RequiredResource("data_raw/literature/pdfs", "legally obtained source PDFs"),
-    RequiredResource("data_raw/literature/supplementary", "legally obtained supplementary files"),
-    RequiredResource("data_raw/extraction/jsonl", "LLM extraction JSONL or CSV outputs"),
-    RequiredResource("data_raw/extraction/parsed_tables", "locally parsed article tables"),
-    RequiredResource("data_raw/taxonomy/gbif_backbone", "GBIF backbone taxonomy export"),
-    RequiredResource("data_raw/taxonomy/worms", "WoRMS match or taxonomy export"),
-    RequiredResource("data_raw/taxonomy/manual_overrides", "manual taxonomy corrections"),
-    RequiredResource("data_raw/geocoding/shp", "ocean polygon shapefile for point-in-ocean checks"),
-    RequiredResource("data_raw/geocoding/cache", "local geocoding cache"),
-    RequiredResource("data_raw/geocoding/manual_review", "manual locality review tables"),
-    RequiredResource("data_raw/cmems/biogeochemistry", "CMEMS biogeochemistry monthly products"),
-    RequiredResource("data_raw/cmems/physics", "CMEMS physical monthly products"),
-    RequiredResource("data_raw/cmems/monthly_tables", "flattened monthly environmental tables"),
-    RequiredResource("data_raw/databases/sqlite", "optional local SQLite databases"),
-    RequiredResource("data_raw/validation", "manual validation tables"),
+    RequiredResource("data/ris", "RIS or CSV bibliographic exports"),
+    RequiredResource("data/articles", "article-level PDF folders and extraction process files"),
+    RequiredResource("data/supplementary", "legally obtained supplementary files"),
+    RequiredResource("data/extraction/jsonl", "LLM extraction JSONL or CSV outputs"),
+    RequiredResource("data/extraction/parsed_tables", "locally parsed article tables"),
+    RequiredResource("data/taxonomy/gbif_backbone", "GBIF backbone taxonomy export"),
+    RequiredResource("data/taxonomy/worms", "WoRMS match or taxonomy export"),
+    RequiredResource("data/taxonomy/manual_overrides", "manual taxonomy corrections"),
+    RequiredResource("data/geocoding/shp", "ocean polygon shapefile for point-in-ocean checks"),
+    RequiredResource("data/geocoding/cache", "local geocoding cache"),
+    RequiredResource("data/geocoding/manual_review", "manual locality review tables"),
+    RequiredResource("data/cmems/biogeochemistry", "CMEMS biogeochemistry monthly products"),
+    RequiredResource("data/cmems/physics", "CMEMS physical monthly products"),
+    RequiredResource("data/cmems/monthly_tables", "flattened monthly environmental tables"),
+    RequiredResource("data/databases/sqlite", "optional local SQLite databases"),
+    RequiredResource("data/validation", "manual validation tables"),
 ]
 
 
@@ -71,5 +70,5 @@ def require_external_resources(project_root: str | Path) -> None:
         raise FileNotFoundError(
             "External resources required for a full rerun are missing.\n"
             f"{details}\n"
-            "The public demo does not need these resources. For full analysis, place the files in the paths above."
+            "Place the required local files in the paths above before running the full workflow."
         )

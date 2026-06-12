@@ -1,4 +1,4 @@
-"""Qwen/DashScope extraction for the synthetic PDF demo."""
+"""Qwen/DashScope extraction helpers for screened literature PDFs."""
 
 from __future__ import annotations
 
@@ -7,11 +7,13 @@ import re
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 from .llm_config import build_dashscope_client, load_dashscope_config
 
 
-TEMPLATE_RELATIVE_PATH = Path("templates") / "prompt_v1.txt"
+TEMPLATE_RELATIVE_PATH = Path("config") / "prompts" / "extraction" / "prompt_v1.txt"
+PROMPT_YAML_RELATIVE_PATH = Path("config") / "prompts" / "extraction" / "extraction_v1.yaml"
 
 PROMPT_FIELDS = [
     "1-MarineOrganism",
@@ -68,6 +70,30 @@ def prompt_version_from_template(template_path: str | Path) -> str:
     return match.group(1).lower() if match else stem.lower()
 
 
+def load_extraction_prompt_spec(project_root: str | Path | None = None, prompt_yaml_path: str | Path | None = None) -> dict[str, object]:
+    """Load extraction prompt metadata from YAML."""
+
+    root = Path(project_root) if project_root is not None else _project_root_from_here()
+    relative_path = Path(prompt_yaml_path) if prompt_yaml_path is not None else PROMPT_YAML_RELATIVE_PATH
+    path = root / relative_path
+    payload = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"Extraction prompt YAML must be a mapping: {path}")
+    version = str(payload.get("version", "")).strip()
+    date = str(payload.get("date", "")).strip()
+    prompt_file = str(payload.get("prompt_file", "")).strip()
+    if not version or not date or not prompt_file:
+        raise ValueError(f"Extraction prompt YAML requires version, date, and prompt_file: {path}")
+    return {
+        "version": version,
+        "date": date,
+        "prompt_file": Path("config") / "prompts" / "extraction" / prompt_file,
+        "enable_thinking": bool(payload.get("enable_thinking", False)),
+        "runs": int(payload.get("runs", 2)),
+        "yaml_path": relative_path,
+    }
+
+
 def load_prompt_template(project_root: str | Path | None = None, template_relative_path: str | Path | None = None) -> str:
     """Load the original prompt template file."""
 
@@ -79,7 +105,7 @@ def load_prompt_template(project_root: str | Path | None = None, template_relati
     return path.read_text(encoding="utf-8")
 
 
-def build_synthetic_extraction_prompt(
+def build_extraction_prompt(
     article_text: str,
     project_root: str | Path | None = None,
     template_relative_path: str | Path | None = None,
@@ -95,6 +121,7 @@ def call_qwen(
     model: str | None = None,
     project_root: str | Path | None = None,
     config_path: str | Path | None = None,
+    enable_thinking: bool | None = None,
 ) -> str:
     """Call DashScope's OpenAI-compatible Qwen endpoint."""
 
@@ -104,7 +131,7 @@ def call_qwen(
         model=model or config.extraction_model,
         messages=[{"role": "user", "content": prompt}],
         temperature=config.extraction_temperature,
-        extra_body={"enable_thinking": config.extraction_enable_thinking},
+        extra_body={"enable_thinking": config.extraction_enable_thinking if enable_thinking is None else enable_thinking},
     )
     return response.choices[0].message.content or ""
 
@@ -219,7 +246,11 @@ def _month_to_number(value: object) -> object:
     return value
 
 
-def qwen_json_to_candidate_records(payload: object, candidate_run: str = "QWEN") -> pd.DataFrame:
+def qwen_json_to_candidate_records(
+    payload: object,
+    candidate_run: str = "QWEN",
+    source_id: str = "UNKNOWN_SOURCE",
+) -> pd.DataFrame:
     """Convert Qwen JSON to the candidate_records schema."""
 
     records = _records_from_payload(payload)
@@ -227,7 +258,7 @@ def qwen_json_to_candidate_records(payload: object, candidate_run: str = "QWEN")
     for index, record in enumerate(records, start=1):
         rows.append(
             {
-                "source_id": "SYN001",
+                "source_id": source_id,
                 "candidate_run": candidate_run,
                 "record_id": f"QWEN-R{index:03d}",
                 "marine_organism": record.get("1-MarineOrganism", True),
@@ -252,7 +283,7 @@ def qwen_json_to_candidate_records(payload: object, candidate_run: str = "QWEN")
                 "arsenosugars_mg_per_kg_ww": _stat_mean(record.get("35-Chem_Arsenosugars")),
                 "source_support": True,
                 "manual_keep": True,
-                "notes": "qwen synthetic extraction",
+                "notes": "qwen extraction",
             }
         )
     df = pd.DataFrame(rows)
@@ -292,7 +323,7 @@ def save_qwen_artifacts(
     article_dir = Path(article_dir)
     prompt_template_path = Path(prompt_template_path)
     prompt_version = prompt_version_from_template(prompt_template_path)
-    version_dir = article_dir / "pdf" / prompt_version
+    version_dir = article_dir / "source" / prompt_version
     prompt_dir = version_dir / "prompt"
     response_dir = version_dir / "raw_response"
     json_dir = version_dir / "raw_json"

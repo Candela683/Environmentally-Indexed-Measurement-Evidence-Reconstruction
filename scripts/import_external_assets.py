@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _safe_name(name: str) -> str:
-    text = name.replace("[Yes]", "[yes]").replace("[YES]", "[yes]")
-    text = re.sub(r"[^A-Za-z0-9\[\]\+._ -]+", "", text)
+    text = re.sub(r"^\[(?:yes|YES|Yes)\]\+?", "", name)
+    text = re.sub(r"[^A-Za-z0-9._ -]+", "", text)
     text = re.sub(r"\s+", "_", text.strip())
     return text[:120]
 
@@ -41,27 +41,27 @@ def _write_manifest(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def copy_two_pdfs(pdf_data: Path, root: Path, manifest: list[dict[str, str]]) -> list[Path]:
-    pdf_units = []
+def copy_two_source_files(pdf_data: Path, root: Path, manifest: list[dict[str, str]]) -> list[Path]:
+    source_files = []
     yes_dirs = [path for path in sorted(pdf_data.iterdir()) if path.is_dir() and path.name.startswith("[Yes]")]
     for index, folder in enumerate(yes_dirs[:2], start=1):
         pdf_files = sorted((folder / "pdf").glob("*.pdf"))
         if not pdf_files:
             continue
-        unit_name = f"[yes]+external_pdf_{index:02d}_{_safe_name(folder.name)}"
-        unit_pdf_dir = root / "synthetic_bundle" / "data_raw" / "literature" / "pdfs" / unit_name / "pdf"
-        copied_pdf = _copy_file(pdf_files[0], unit_pdf_dir / "source.pdf", manifest)
+        unit_name = f"external_source_{index:02d}_{_safe_name(folder.name)}"
+        source_dir = root / "data" / "articles" / unit_name / "source"
+        copied_pdf = _copy_file(pdf_files[0], source_dir / f"{unit_name}.pdf", manifest)
         doi_log = folder / "pdf" / "doi.log"
         if doi_log.exists():
-            _copy_file(doi_log, unit_pdf_dir / "doi.txt", manifest)
+            _copy_file(doi_log, source_dir / "doi.txt", manifest)
         else:
-            (unit_pdf_dir / "doi.txt").write_text("not_available\n", encoding="utf-8")
-        pdf_units.append(copied_pdf)
-    return pdf_units
+            (source_dir / "doi.txt").write_text("not_available\n", encoding="utf-8")
+        source_files.append(copied_pdf)
+    return source_files
 
 
 def copy_gbif(gbif_dir: Path, root: Path, manifest: list[dict[str, str]], full: bool = False) -> None:
-    target_dir = root / "synthetic_bundle" / "data_raw" / "taxonomy" / "gbif_backbone"
+    target_dir = root / "data" / "taxonomy" / "gbif_backbone"
     selected = [
         "unique_scientific_names.pkl",
         "unique_common_names.pkl",
@@ -88,7 +88,7 @@ def copy_gbif(gbif_dir: Path, root: Path, manifest: list[dict[str, str]], full: 
 
 
 def copy_worms(worms_dir: Path, root: Path, manifest: list[dict[str, str]], full: bool = True) -> None:
-    target_dir = root / "synthetic_bundle" / "data_raw" / "taxonomy" / "worms"
+    target_dir = root / "data" / "taxonomy" / "worms"
     selected = ["meta.xml", "eml.xml", "identifier.txt", "speciesprofile.txt"]
     if full:
         selected.append("taxon.txt")
@@ -103,7 +103,7 @@ def copy_worms(worms_dir: Path, root: Path, manifest: list[dict[str, str]], full
 
 
 def copy_cmems(cmems_root: Path, root: Path, manifest: list[dict[str, str]], full: bool = False) -> None:
-    target_dir = root / "synthetic_bundle" / "data_raw" / "cmems"
+    target_dir = root / "data" / "cmems"
     small_files = [
         cmems_root / "phy" / "cmems_mod_glo_phy-all_my_0.25deg_P1M-m-allyear06.nc",
         cmems_root / "code" / "mannual_name_common.csv",
@@ -137,7 +137,7 @@ def copy_cmems(cmems_root: Path, root: Path, manifest: list[dict[str, str]], ful
 
 
 def copy_geocoding_shp(shp_root: Path, root: Path, manifest: list[dict[str, str]]) -> None:
-    target_dir = root / "synthetic_bundle" / "data_raw" / "geocoding" / "shp"
+    target_dir = root / "data" / "geocoding" / "shp"
     if not shp_root.exists():
         raise FileNotFoundError(f"Missing shapefile folder: {shp_root}")
     for source in sorted(shp_root.rglob("*")):
@@ -163,14 +163,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     manifest: list[dict[str, str]] = []
-    copied_pdfs = copy_two_pdfs(Path(args.pdf_data), ROOT, manifest)
+    copied_pdfs = copy_two_source_files(Path(args.pdf_data), ROOT, manifest)
     copy_gbif(Path(args.gbif), ROOT, manifest, full=args.full_gbif)
     copy_worms(Path(args.worms), ROOT, manifest, full=args.full_worms)
     copy_cmems(Path(args.cmems), ROOT, manifest, full=args.full_cmems)
     copy_geocoding_shp(Path(args.shp), ROOT, manifest)
-    _write_manifest(ROOT / "synthetic_bundle" / "external_asset_manifest.csv", manifest)
+    _write_manifest(ROOT / "data" / "external_asset_manifest.csv", manifest)
     print(f"Copied PDF files: {len(copied_pdfs)}")
-    print(f"Manifest: {ROOT / 'synthetic_bundle' / 'external_asset_manifest.csv'}")
+    print(f"Manifest: {ROOT / 'data' / 'external_asset_manifest.csv'}")
     return 0
 
 

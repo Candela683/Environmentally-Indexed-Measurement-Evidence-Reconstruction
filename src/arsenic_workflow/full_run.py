@@ -34,7 +34,7 @@ def _candidate_files(folder: Path, suffixes: set[str]) -> list[Path]:
 
 
 def _sqlite_files(project_root: Path) -> list[Path]:
-    return _candidate_files(project_root / "data_raw" / "databases" / "sqlite", DB_SUFFIXES)
+    return _candidate_files(project_root / "data" / "databases" / "sqlite", DB_SUFFIXES)
 
 
 def _table_exists(db_path: Path, table_name: str) -> bool:
@@ -71,7 +71,7 @@ def load_candidate_records(project_root: str | Path) -> pd.DataFrame:
     if from_db is not None:
         return from_db
     return _read_first_table(
-        project_root / "data_raw" / "extraction" / "jsonl",
+        project_root / "data" / "extraction" / "jsonl",
         "candidate records table or SQLite table candidate_records",
     )
 
@@ -84,16 +84,16 @@ def load_taxonomy_lookup(project_root: str | Path) -> pd.DataFrame:
     if from_db is not None:
         return from_db
     for folder in [
-        project_root / "data_raw" / "taxonomy" / "manual_overrides",
-        project_root / "data_raw" / "taxonomy" / "worms",
-        project_root / "data_raw" / "taxonomy" / "gbif_backbone",
+        project_root / "data" / "taxonomy" / "manual_overrides",
+        project_root / "data" / "taxonomy" / "worms",
+        project_root / "data" / "taxonomy" / "gbif_backbone",
     ]:
         files = _candidate_files(folder, TABLE_SUFFIXES)
         if files:
             return read_table(files[0])
     raise FileNotFoundError(
         "Missing taxonomy lookup. Expected SQLite table taxonomy_resolved or a table under "
-        "data_raw/taxonomy/manual_overrides, data_raw/taxonomy/worms, or data_raw/taxonomy/gbif_backbone."
+        "data/taxonomy/manual_overrides, data/taxonomy/worms, or data/taxonomy/gbif_backbone."
     )
 
 
@@ -105,7 +105,7 @@ def load_environment_table(project_root: str | Path) -> pd.DataFrame:
     if from_db is not None:
         return from_db
     return _read_first_table(
-        project_root / "data_raw" / "cmems" / "monthly_tables",
+        project_root / "data" / "cmems" / "monthly_tables",
         "environment table or SQLite table environment_monthly",
     )
 
@@ -118,7 +118,7 @@ def load_validation_table(project_root: str | Path) -> pd.DataFrame:
     if from_db is not None:
         return from_db
     return _read_first_table(
-        project_root / "data_raw" / "validation",
+        project_root / "data" / "validation",
         "validation table or SQLite table validation",
     )
 
@@ -129,10 +129,10 @@ def discover_full_run_inputs(project_root: str | Path) -> pd.DataFrame:
     project_root = Path(project_root)
     rows = []
     specs = [
-        ("candidate_records", "candidate_records", project_root / "data_raw" / "extraction" / "jsonl"),
-        ("taxonomy_resolved", "taxonomy_resolved", project_root / "data_raw" / "taxonomy"),
-        ("environment_monthly", "environment_monthly", project_root / "data_raw" / "cmems" / "monthly_tables"),
-        ("validation", "validation", project_root / "data_raw" / "validation"),
+        ("candidate_records", "candidate_records", project_root / "data" / "extraction" / "jsonl"),
+        ("taxonomy_resolved", "taxonomy_resolved", project_root / "data" / "taxonomy"),
+        ("environment_monthly", "environment_monthly", project_root / "data" / "cmems" / "monthly_tables"),
+        ("validation", "validation", project_root / "data" / "validation"),
     ]
     for label, sqlite_table, folder in specs:
         db_source = None
@@ -160,7 +160,7 @@ def require_full_run_inputs(project_root: str | Path) -> pd.DataFrame:
     missing = discovery[discovery["status"].eq("missing")]
     if not missing.empty:
         lines = [
-            f"- {row.input_name}: SQLite table {row.sqlite_table} or a matching table file in data_raw"
+            f"- {row.input_name}: SQLite table {row.sqlite_table} or a matching table file in data"
             for row in missing.itertuples(index=False)
         ]
         raise FileNotFoundError("Missing full local rerun inputs:\n" + "\n".join(lines))

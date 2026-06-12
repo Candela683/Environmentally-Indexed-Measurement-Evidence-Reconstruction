@@ -1,253 +1,308 @@
 # Environmentally Indexed Measurement Evidence Reconstruction
 
-This repository contains the companion code for the manuscript:
+Companion code for the manuscript:
 
 ```text
 An evidence-to-model framework for reconstructing literature-derived contaminant measurements using a schema-guided large language model: a marine arsenic case study
 ```
 
-Submitted to Environmental Modelling and Software as manuscript `ENVSOFT-D-26-01822`.
+Manuscript number: `ENVSOFT-D-26-01822`.
 
-The code provides the runnable reconstruction workflow for marine arsenic measurement evidence.
+This repository demonstrates a RIS-first workflow for reconstructing field-derived arsenic measurements in marine organisms. It keeps copyrighted article text, private API keys, copied PDFs, NetCDF files, and large database resources out of version control.
 
-The workflow is organized around PDF units. Each selected article is stored as a folder named with the `[yes]+...` prefix. In this project, `[yes]` means the PDF has been selected and confirmed for the reconstruction workflow.
-
-Large local resources such as PDFs, SQLite databases, NetCDF slices, taxonomy files, and generated run outputs are kept in the local working folder and ignored by Git. The repository keeps the code, configuration, notebook demo, prompt templates, and folder structure needed to rebuild or rerun the workflow.
-
-## Main Entry Points
-
-Start from the RIS example:
+## Repository Layout
 
 ```text
-synthetic_bundle/data_raw/literature/ris/example.ris
+config/
+  dashscope_models.yaml
+  api_endpoints.example.yaml
+  prompts/
+    abstract_screening/
+      screening_v1.yaml
+    extraction/
+      extraction_v1.yaml
+      prompt_v1.txt
+  review_stages.yaml
+
+data/
+  ris/
+    example.ris
+  articles/
+    <source_id>/
+      abstract_screening/
+      source/
+        <source_id>.pdf
+        extracted_text/
+        page_images/
+        sections/
+        figures/
+        v1/
+  cmems/
+  geocoding/
+  index/
+  taxonomy/
+
+notebooks/
+  complete_workflow_example.ipynb
+
+scripts/
+src/
 ```
 
-Parse the RIS file, extract the DOI, create the `[yes]+example` PDF unit, and download the source PDF:
-
-```powershell
-python scripts\run_ris_to_pdf_download.py
-```
-
-The script uses `illustrative_download_function` in `src/arsenic_workflow/ris_ingest.py` as the illustrative download function. It currently points to the SSRN delivery URL for DOI `10.2139/ssrn.4476876`.
-
-Notebook demo:
+The main runnable example is:
 
 ```text
-notebooks/synthetic_pdf_to_database_demo.ipynb
+notebooks/complete_workflow_example.ipynb
 ```
 
-Command-line synthetic PDF demo:
+## Setup
+
+Use your own Python environment and install the dependencies:
 
 ```powershell
-python scripts\run_synthetic_pdf_demo.py
+pip install -r requirements.txt
 ```
 
-When running from the parent project folder, pass this repository folder explicitly:
+DashScope keys are read locally. Do not write keys into the repository.
 
 ```powershell
-python .\arsenic_reconstruction_release\scripts\run_synthetic_pdf_demo.py D:\wuqiang\qiang\arsenic\arsenic_reconstruction_release
+echo $env:DASHSCOPE_API_KEY
 ```
 
-Use the Python or Conda environment that contains the packages listed in `requirements.txt`.
-
-## Qwen / DashScope Configuration
-
-DashScope model and endpoint settings are configured here:
+Model settings are configured in:
 
 ```text
 config/dashscope_models.yaml
 ```
 
-Current defaults:
+The OCR model is configured as:
 
-- extraction model: `qwen3.6-plus`
-- image/article OCR model: `qwen-vl-ocr-2025-11-20`
-- question-answering model: `qwen3.6-plus`
-- API base URL: `https://dashscope.aliyuncs.com/compatible-mode/v1`
-- API key source: environment variable `DASHSCOPE_API_KEY`
+```text
+qwen-vl-ocr-2025-11-20
+```
 
-The OCR model is used for article images, image-only articles, scanned pages, figure/table screenshots, and abnormal article files that cannot be handled cleanly by normal text extraction.
+It is used for image-only papers, figure/table screenshots, abnormal PDF text extraction, and pages where concentration units are damaged by encoding.
 
-Check configuration without printing the key:
+## Input Data
+
+The workflow starts from:
+
+```text
+data/ris/example.ris
+```
+
+RIS parsing uses `rispy`, so RIS exports from tools such as WoS, EndNote, Zotero, or publisher platforms can retain abstracts through standard fields such as `AB`.
+
+PDFs are managed per article:
+
+```text
+data/articles/<source_id>/source/<source_id>.pdf
+```
+
+For example:
+
+```text
+data/articles/test_1/source/test_1.pdf
+```
+
+Large local resources should be placed locally but not committed:
+
+```text
+data/cmems/
+data/geocoding/shp/
+data/taxonomy/
+```
+
+CMEMS NetCDF files belong under:
+
+```text
+data/cmems/
+```
+
+The environment matching code selects the nearest available year. If no matching year is available, it falls back to:
+
+```text
+Multi-year average.nc
+```
+
+## Workflow
+
+### 1. RIS Indexing and Abstract Screening
 
 ```powershell
-python scripts\validate_dashscope_config.py
+python scripts\run_ris_screening_demo.py
 ```
 
-Run the synthetic PDF through the real Qwen extraction prompt:
+This reads `data/ris/example.ris`, writes:
+
+```text
+data/index/literature_index.csv
+```
+
+and screens publications using:
+
+```text
+config/prompts/abstract_screening/screening_v1.yaml
+```
+
+The abstract screening output is stored per article:
+
+```text
+data/articles/<source_id>/abstract_screening/v1/result.json
+```
+
+PDF download is not attempted before screening. If source download is needed after screening:
 
 ```powershell
-python scripts\run_synthetic_pdf_demo.py . --qwen --prompt-template templates\prompt_v1.txt --qwen-runs 2
+python scripts\run_ris_screening_demo.py --download-source-files
 ```
 
-Prompt-versioned extraction artifacts are written under the PDF folder, for example:
+Failed downloads are recorded as `source_file_status=manual` in `data/index/literature_index.csv`.
 
-```text
-synthetic_bundle/data_raw/literature/pdfs/[yes]+synthetic_marine_arsenic_article/pdf/v1/
-```
-
-Each prompt version keeps:
-
-- `prompt/`: prompt template and filled prompts for each run.
-- `raw_response/`: raw model responses.
-- `raw_json/`: extracted JSON payloads.
-- `parsed_csv/`: parsed records from each run.
-- `indexed_csv/`: parsed records with prompt/run indexes.
-- `final/`: final per-PDF candidate table used by the downstream workflow.
-
-## Local Data Import
-
-Copy selected local PDFs and reference resources into the repository working folder:
+### 2. PDF Parsing
 
 ```powershell
-python scripts\import_external_assets.py
+python scripts\parse_article_sources.py
 ```
 
-The import script copies selected `[yes]` PDFs, WoRMS files, GBIF name indexes, the ocean shapefile, and a small CMEMS subset into `synthetic_bundle/data_raw/`.
+Each PDF is parsed into:
 
-Optional larger imports:
+```text
+source/extracted_text/
+source/page_images/
+source/sections/
+source/figures/
+```
+
+Text layers are generated in priority order:
+
+```text
+full_text.txt
+no_ref_text.txt
+ocrl_text.txt
+manual_text.txt
+```
+
+The later non-empty file has higher priority. `manual_text.txt` is created for human edits and is not overwritten once present.
+
+OCR fallback is enabled by default. It is triggered when native PDF text is too short, visibly corrupted, or contains damaged concentration units such as malformed microgram symbols. To disable fallback:
 
 ```powershell
-python scripts\import_external_assets.py --full-gbif
-python scripts\import_external_assets.py --full-cmems
+python scripts\parse_article_sources.py --no-ocr-fallback
 ```
 
-These copied assets remain local and are ignored by Git.
+### 3. Qwen Extraction and Concentration Agreement
 
-## Local Resources To Prepare
-
-Some resources are local inputs rather than files maintained in Git. Prepare or download them before running a full reconstruction:
-
-- selected `[yes]` PDF folders: source articles that have been screened and confirmed for extraction.
-- GBIF resources: local taxonomy/name indexes used for species-name matching.
-- WoRMS resources: local WoRMS taxonomy export used for accepted names and marine taxonomy fields.
-- CMEMS resources: local NetCDF products or flattened monthly environmental tables used for environmental matching.
-- extraction outputs: prompt-versioned JSON/CSV files generated from the PDF extraction runs.
-- validation tables: manual labels or review tables used to evaluate extraction quality.
-
-The demo can generate a local SQLite database from the synthetic PDF. For real projects, database files can be kept under `synthetic_bundle/data_raw/databases/sqlite/`, but they are not committed to Git.
-
-The Natural Earth ocean shapefile used for ocean-position checks is included in this repository under `synthetic_bundle/data_raw/geocoding/shp/`. Replace it locally only if a newer or project-specific ocean mask is needed.
-
-## Review Tables
-
-Per-PDF extraction files stay inside each PDF unit. Cross-PDF review tables are written outside the PDF folders:
+Extraction prompt settings are in:
 
 ```text
-synthetic_bundle/review_tables/
+config/prompts/extraction/extraction_v1.yaml
 ```
 
-Main review stages:
+The run count is configured there:
 
-- `extracted_data/`: combined extraction CSVs by prompt version.
-- `extracted_data/validated_for_manual_review/`: extraction records after validation checks.
-- `geographic_mapping/`: coordinate QC outputs; coordinates are not rewritten.
-- `species_matching/`: taxonomy-matched records.
-- `environment_variable_matching/`: records after environmental variable matching.
-- `validation/`: validation metrics and error-class summaries.
-- `complete_outputs/`: complete copy of workflow CSV outputs.
+```yaml
+runs: 2
+enable_thinking: true
+```
 
-## Workflow Outputs
+Run extraction consensus:
 
-The full workflow writes:
+```powershell
+python scripts\run_extraction_consensus.py
+```
+
+For each article, the script selects the highest-priority text layer, calls Qwen for the configured number of runs, and keeps only records whose total arsenic concentration agrees across at least two runs.
+
+Per-article outputs are stored under:
 
 ```text
-00_input_discovery.csv
-01_duplicate_run_qc.csv
-02_candidate_record_qc.csv
-03_field_completeness.csv
-04_harmonized_records.csv
-05_coordinate_qc_no_point_modification.csv
-06_species_matched_records.csv
-07_environment_variable_matched_records.csv
-08_taxonomic_variance_proxy.csv
-09_environment_spearman_correlation.csv
-10_environment_models.csv
-11_taxon_environment_models.csv
-12_speciation_summary.csv
-13_validation_metrics.csv
-14_validation_error_classes.csv
+data/articles/<source_id>/source/v1/
+  prompt/
+  raw_response/
+  raw_json/
+  parsed_csv/
+  indexed_csv/
+  final/
 ```
 
-Environmental matching attaches nearest-grid values and match distance while preserving the sample coordinates.
+### 4. Review Workspace
 
-## Coordinate And Ocean Checks
-
-Reported longitude/latitude values are treated as the source coordinates. If a record already has longitude and latitude, the workflow checks whether that point falls inside the ocean polygon, but it does not relocate or overwrite the point.
-
-The ocean polygon is stored under:
+After extraction, all non-article CSVs are staged under:
 
 ```text
-synthetic_bundle/data_raw/geocoding/shp/ne_10m_ocean/ne_10m_ocean.shp
+data/review_workspace/
 ```
 
-During coordinate QC, the workflow adds ocean-position flags to `05_coordinate_qc_no_point_modification.csv`, including `reported_coordinate_ocean_checked`, `reported_coordinate_in_ocean`, `reported_coordinate_ocean_status`, and `coordinate_needs_manual_geographic_review`. If future extraction or geocoding tables include candidate relocated coordinate columns, those candidate points are checked too, but reported longitude/latitude still take priority.
-
-## Synthetic PDF Generator
-
-The synthetic PDF generator is kept in:
+Each stage has:
 
 ```text
-src/arsenic_workflow/devtools/generate_synthetic_pdf.py
+raw_csv/
+manual_corrected_csv/
 ```
 
-It creates a small article-style PDF with an abstract, methods text, and table data for workflow testing.
+The next stage always reads from the previous stage's `manual_corrected_csv`.
 
-## Folder Structure
+Configured stages are:
 
 ```text
-arsenic_reconstruction_release/
-  config/
-    dashscope_models.yaml
-    synthetic_demo_config.yaml
-    secrets/
-  notebooks/
-    synthetic_pdf_to_database_demo.ipynb
-  scripts/
-    import_external_assets.py
-    run_synthetic_pdf_demo.py
-    validate_dashscope_config.py
-  src/
-    arsenic_workflow/
-      devtools/
-        generate_synthetic_pdf.py
-  synthetic_bundle/
-    data_raw/
-      cmems/
-      databases/
-      geocoding/
-        shp/
-          ne_10m_ocean/
-      literature/
-        ris/
-          example.ris
-        pdfs/
-          [yes]+example/
-            pdf/
-              source_metadata/
-              extracted_text/
-              extracted_tables/
-          [yes]+synthetic_marine_arsenic_article/
-            pdf/
-              source_metadata/
-              extracted_text/
-              extracted_tables/
-              v1/
-                prompt/
-                raw_response/
-                raw_json/
-                parsed_csv/
-                indexed_csv/
-                final/
-      taxonomy/
-    review_tables/
-      extracted_data/
-      geographic_mapping/
-      species_matching/
-      environment_variable_matching/
-      validation/
-      complete_outputs/
-    outputs/
-  templates/
-    prompt_v1.txt
+01_extraction_aggregation
+02_measurement_harmonization
+03_worms_taxonomy_matching
+04_geographic_review
+05_environment_matching
+06_final_output
 ```
+
+Run one stage:
+
+```powershell
+python scripts\run_review_workspace.py --stage extraction_aggregation
+```
+
+Run all stages:
+
+```powershell
+python scripts\run_review_workspace.py --stage all
+```
+
+The stages perform:
+
+- aggregation of per-article consensus CSVs, including article folder and original DOI
+- unit and wet-weight harmonization
+- WoRMS taxonomy matching
+- coordinate quality checks and geocoding review preparation
+- physical and biogeochemical NetCDF extraction
+- final reconstructed CSV output
+
+## Notebook
+
+The complete example notebook is:
+
+```text
+notebooks/complete_workflow_example.ipynb
+```
+
+It includes the full workflow and helper functions for plotting and lightweight modeling. Expensive steps are guarded by switches:
+
+```python
+RUN_REAL_QWEN = False
+RUN_PDF_PARSE = False
+RUN_REVIEW_STAGES = False
+```
+
+Set them to `True` only when you want to call models or regenerate outputs.
+
+## Data and Copyright Notes
+
+Do not commit:
+
+- private API keys
+- copied PDFs
+- copyrighted article full text
+- generated OCR/page images
+- NetCDF files
+- full GBIF/WoRMS databases
+- generated Qwen responses and extraction CSVs
+
+The included `test_1` article is a locally generated minimal example for workflow checking. Real literature files should be supplied by the user according to their own access rights.

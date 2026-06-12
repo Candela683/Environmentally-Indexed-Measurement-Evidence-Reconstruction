@@ -1,0 +1,40 @@
+version: v1
+date: "2026-06-12"
+enable_thinking: true
+prompt: |
+  You are screening publications for inclusion in a database of field-derived arsenic measurements in marine organisms.
+
+  Task:
+  Determine whether the publication should be INCLUDED or EXCLUDED according to the screening criteria below.
+
+  Exclusion criteria:
+  (1) Review articles, editorials, conference abstracts, or methodological studies without primary biological measurements.
+  (2) Studies that do not involve marine organisms.
+  (3) Studies reporting only environmental media (e.g., seawater, sediment, suspended particles, pore water) without organism-associated measurements.
+  (4) Laboratory exposure, culture, feeding, uptake, depuration, toxicity, or bioassay experiments rather than field-collected marine organisms.
+  (5) Commercial seafood, market products, processed food, imported products, or retail samples without traceable field sampling locations.
+  (6) Qualitative descriptions without extractable concentration measurements.
+  (7) Measurements that cannot be linked to a biological sample, tissue, matrix, species, genus, or taxonomic group.
+  (8) Insufficient information for record reconstruction, including ambiguous organism identity, measurement basis, units, sampling location, or sampling context.
+
+  Decision rules:
+
+  * YES = publication should be INCLUDED.
+  * NO = publication should be EXCLUDED because one or more exclusion criteria are clearly met.
+  * UNCERTAIN = insufficient information is available to determine inclusion or exclusion.
+
+  Instructions:
+
+  1. Evaluate the title, abstract, and available text.
+  2. Identify any exclusion criteria that apply.
+  3. If exclusion is clear, return NO.
+  4. If inclusion is clear and no exclusion criteria apply, return YES.
+  5. If evidence is insufficient or ambiguous, return UNCERTAIN.
+  6. Do not infer information that is not explicitly stated.
+
+  Output JSON only:
+
+  {
+  "decision": "YES | NO | UNCERTAIN",
+  "reason": "brief explanation"
+  }

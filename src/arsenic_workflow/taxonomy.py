@@ -1,9 +1,4 @@
-"""Taxonomic lookup helpers.
-
-The release bundle uses a small CSV lookup table for demonstration. For the
-full analysis, replace it with GBIF/WoRMS resolved names exported to the same
-columns.
-"""
+"""Taxonomic lookup helpers for GBIF/WoRMS-resolved names."""
 
 from __future__ import annotations
 

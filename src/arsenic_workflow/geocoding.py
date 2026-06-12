@@ -11,7 +11,7 @@ import pandas as pd
 
 
 OCEAN_SHAPEFILE_RELATIVE_PATH = (
-    Path("data_raw") / "geocoding" / "shp" / "ne_10m_ocean" / "ne_10m_ocean.shp"
+    Path("data") / "geocoding" / "shp" / "ne_10m_ocean" / "ne_10m_ocean.shp"
 )
 
 RELOCATION_CANDIDATE_COORDINATES = [
@@ -30,7 +30,6 @@ def _default_ocean_shapefile(project_root: str | Path | None = None) -> Path | N
         candidates.extend(
             [
                 root / OCEAN_SHAPEFILE_RELATIVE_PATH,
-                root / "synthetic_bundle" / OCEAN_SHAPEFILE_RELATIVE_PATH,
             ]
         )
     candidates.append(Path.cwd() / OCEAN_SHAPEFILE_RELATIVE_PATH)

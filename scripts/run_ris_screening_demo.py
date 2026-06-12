@@ -14,7 +14,7 @@ from arsenic_workflow.ris_ingest import (
     DEFAULT_DOWNLOAD_URL,
     DEFAULT_RIS_PATH,
     DEFAULT_SCREENING_PROMPT,
-    download_raw_pdfs,
+    download_article_source_files,
     initialize_literature_index_from_ris,
     load_literature_index,
     run_screening,
@@ -23,13 +23,20 @@ from arsenic_workflow.ris_ingest import (
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run RIS -> raw PDF -> Qwen screening workflow.")
+    parser = argparse.ArgumentParser(description="Run RIS -> Qwen screening workflow.")
     parser.add_argument("project_root", nargs="?", default=str(ROOT), help="repository root")
     parser.add_argument("--ris", default=str(DEFAULT_RIS_PATH), help="RIS file path relative to project root")
     parser.add_argument("--url", default=DEFAULT_DOWNLOAD_URL, help="PDF download URL")
     parser.add_argument("--screening-prompt", default=str(DEFAULT_SCREENING_PROMPT), help="screening prompt path")
-    parser.add_argument("--skip-download", action="store_true", help="build the index without downloading PDFs")
     parser.add_argument("--skip-screening", action="store_true", help="skip Qwen screening")
+    parser.add_argument(
+        "--enable-thinking",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="override the prompt YAML thinking setting for screening",
+    )
+    parser.add_argument("--download-source-files", action="store_true", help="after screening, try downloading YES source files")
+    parser.add_argument("--download-pdfs", action="store_true", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
 
 
@@ -38,11 +45,11 @@ def main(argv: list[str]) -> int:
     root = Path(args.project_root)
     index_path = initialize_literature_index_from_ris(root, ris_path=args.ris, pdf_url=args.url)
     index = load_literature_index(root)
-    if not args.skip_download:
-        index = download_raw_pdfs(root, index)
-        write_literature_index(root, index.to_dict(orient="records"))
     if not args.skip_screening:
-        index = run_screening(root, index, prompt_path=args.screening_prompt)
+        index = run_screening(root, index, prompt_path=args.screening_prompt, enable_thinking=args.enable_thinking)
+        write_literature_index(root, index.to_dict(orient="records"))
+    if args.download_source_files or args.download_pdfs:
+        index = download_article_source_files(root, index)
         write_literature_index(root, index.to_dict(orient="records"))
     print(f"Literature index: {index_path}")
     print(index.to_string(index=False))

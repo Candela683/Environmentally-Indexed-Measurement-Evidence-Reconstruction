@@ -1,0 +1,29 @@
+review_stages:
+  root: data/review_workspace
+  literature_index: data/index/literature_index.csv
+  extraction_prompt_version: v1
+
+  stage_dirs:
+    extraction_aggregation: 01_extraction_aggregation
+    measurement_harmonization: 02_measurement_harmonization
+    worms_taxonomy_matching: 03_worms_taxonomy_matching
+    geographic_review: 04_geographic_review
+    environment_matching: 05_environment_matching
+    final_output: 06_final_output
+
+  taxonomy:
+    worms_lookup_dir: data/taxonomy/worms
+    scientific_cutoff: 85
+    common_cutoff: 90
+    genus_cutoff: 70
+
+  geocoding:
+    ocean_shapefile: data/geocoding/shp/ne_10m_ocean/ne_10m_ocean.shp
+    require_review_when_missing_lonlat: true
+    require_review_when_not_in_ocean: true
+
+  netcdf:
+    cmems_root: data/cmems
+    multi_year_filename: Multi-year average.nc
+    physical_keyword: physical
+    bio_keyword: bio
