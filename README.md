@@ -8,7 +8,7 @@ An evidence-to-model framework for reconstructing literature-derived contaminant
 
 Manuscript number: `ENVSOFT-D-26-01822`.
 
-This repository demonstrates a RIS-first workflow for reconstructing field-derived arsenic measurements in marine organisms. It keeps copyrighted article text, private API keys, copied PDFs, NetCDF files, and large database resources out of version control.
+This repository provides a RIS-first workflow for reconstructing field-derived arsenic measurements in marine organisms. Article PDFs, full extracted article text, API credentials, NetCDF products, and large taxonomy resources are treated as local runtime resources rather than distributed source files.
 
 ## Repository Layout
 
@@ -63,7 +63,7 @@ Use your own Python environment and install the dependencies:
 pip install -r requirements.txt
 ```
 
-DashScope keys are read locally. Do not write keys into the repository.
+DashScope keys are read from the local environment or a local secret file.
 
 ```powershell
 echo $env:DASHSCOPE_API_KEY
@@ -105,7 +105,7 @@ For example:
 data/articles/test_1/source/test_1.pdf
 ```
 
-Large local resources should be placed locally but not committed:
+Large runtime resources are placed in the local data tree:
 
 ```text
 data/cmems/
@@ -185,7 +185,7 @@ manual_text.txt
 
 The later non-empty file has higher priority. `manual_text.txt` is created for human edits and is not overwritten once present.
 
-OCR fallback is enabled by default. It is triggered when native PDF text is too short, visibly corrupted, or contains damaged concentration units such as malformed microgram symbols. To disable fallback:
+OCR fallback is enabled by default. It is triggered when native PDF text is too short, visibly corrupted, or contains damaged concentration units. Unit symbols require particular care because many PDFs encode `µg`, `μg`, and related symbols through font-specific escape sequences. During extraction, a visually correct unit such as `µg/g` may appear in text as `Î¼g/g`, `汛g/g`, `�g/g`, or another corrupted token; in some cases the corruption appears immediately before or after `mg`, which can change the interpreted concentration unit. The parser therefore checks unit fragments around numeric concentrations with the same normalization logic used during harmonization. Pages with suspicious unit fragments are sent through OCR and the OCR text is stored separately before priority selection. To disable fallback:
 
 ```powershell
 python scripts\parse_article_sources.py --no-ocr-fallback
@@ -266,14 +266,14 @@ Run all stages:
 python scripts\run_review_workspace.py --stage all
 ```
 
-The stages perform:
+Stage methods:
 
-- aggregation of per-article consensus CSVs, including article folder and original DOI
-- unit and wet-weight harmonization
-- WoRMS taxonomy matching
-- coordinate quality checks and geocoding review preparation
-- physical and biogeochemical NetCDF extraction
-- final reconstructed CSV output
+- `01_extraction_aggregation`: scans each article folder for `source/v1/final/concentration_consensus_records.csv`, appends the article folder name and the original DOI from `data/index/literature_index.csv`, and writes one combined extraction table.
+- `02_measurement_harmonization`: applies numeric parsing, unit normalization, tissue labeling, and wet-weight conversion. Units such as `mg/kg`, `mg kg-1`, `ug/g`, `µg/g`, `μg/g`, `ug/kg`, and `ng/g` are normalized before conversion. Dry-weight values are converted with reported water content when available, otherwise with the configured moisture assumption used by `harmonize_records`.
+- `03_worms_taxonomy_matching`: matches scientific names first by exact normalized spelling and then by genus-gated fuzzy matching. When a scientific name is missing or weak, common-name fields can be compared with local WoRMS or prepared taxonomy tables. Match type, score, matched name, and accepted taxonomy columns are retained for review.
+- `04_geographic_review`: preserves reported coordinates, checks numeric validity, flags missing coordinates, zero-zero points, out-of-range values, and points outside the ocean polygon. Records requiring geographic review receive query fields for manual geocoding, plus empty columns for reviewed latitude and longitude.
+- `05_environment_matching`: reads reviewed coordinates and selects local CMEMS NetCDF files. For each record, the nearest available year is preferred; when no suitable year-specific file is available, `Multi-year average.nc` is used. Physical and biogeochemical variables are sampled from the nearest grid cell, with the grid coordinate and match distance retained.
+- `06_final_output`: copies the manually reviewed environment-matched records into the final reconstructed CSV stage, preserving the audit columns generated along the way.
 
 ## Notebook
 
@@ -295,14 +295,6 @@ Set them to `True` only when you want to call models or regenerate outputs.
 
 ## Data and Copyright Notes
 
-Do not commit:
-
-- private API keys
-- copied PDFs
-- copyrighted article full text
-- generated OCR/page images
-- NetCDF files
-- full GBIF/WoRMS databases
-- generated Qwen responses and extraction CSVs
+The distributed repository contains code, configuration templates, prompts, a small RIS example, and documentation. Local runs may create private or licensed runtime resources, including article PDFs, extracted article text, page images, OCR outputs, NetCDF files, taxonomy exports, and model responses. These runtime resources remain in the local data tree.
 
 The included `test_1` article is a locally generated minimal example for workflow checking. Real literature files should be supplied by the user according to their own access rights.

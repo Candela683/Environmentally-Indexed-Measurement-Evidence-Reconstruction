@@ -1,6 +1,6 @@
 # Local Secret Files
 
-Place API keys here only on your local machine. Do not commit real keys.
+Place API keys here only on the local machine. These files are local runtime credentials and are not part of the distributed source package.
 
 Example files:
 
