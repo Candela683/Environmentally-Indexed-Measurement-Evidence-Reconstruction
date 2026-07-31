@@ -2,13 +2,7 @@
 
 Companion code for the manuscript:
 
-```text
-An evidence-to-model framework for reconstructing literature-derived contaminant measurements using a schema-guided large language model: a marine arsenic case study
-```
 
-Manuscript number: `ENVSOFT-D-26-01822`.
-
-This repository provides a RIS-first workflow for reconstructing field-derived arsenic measurements in marine organisms. Article PDFs, full extracted article text, API credentials, NetCDF products, and large taxonomy resources are treated as local runtime resources rather than distributed source files.
 
 ## Repository Layout
 
